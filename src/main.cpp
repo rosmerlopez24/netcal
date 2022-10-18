@@ -75,8 +75,8 @@ auto display_network_table(const network_v4 &network) -> void {
                 to_binary_and_format(network.broadcast().to_uint())});
   data.add_row({"Start range", network.hosts().begin()->to_string(),
                 to_binary_and_format(network.hosts().begin()->to_uint())});
-  data.add_row({"End range", network.hosts().end()->to_string(),
-                to_binary_and_format(network.hosts().end()->to_uint())});
+  data.add_row({"End range", (--network.hosts().end())->to_string(),
+                to_binary_and_format((--network.hosts().end())->to_uint())});
   data.add_row({"Hosts", std::to_string(network.hosts().size())});
 
   /* Set format to table */
