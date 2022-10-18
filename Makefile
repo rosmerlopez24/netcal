@@ -53,6 +53,13 @@ run:
 	+$(MAKE) all
 	$(RUN)
 
+# install binary in the path of current user
+.PHONY: install
+install:
+	@echo Installing...
+	cp -r ./netcal ~/.local/bin/netcal
+	@echo Done.
+
 # explains the only three options you should be using (unless you build more of your own)
 .PHONY: help
 help:
