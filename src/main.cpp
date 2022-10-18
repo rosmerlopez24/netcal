@@ -1,24 +1,17 @@
+#include <argparse/argparse.hpp>
 #include <asio/error_code.hpp>
 #include <asio/ip/network_v4.hpp>
 #include <bitset>
 #include <cstdlib>
-#include <getopt.h>
 #include <iostream>
 #include <limits>
-#include <optional>
+#include <stdexcept>
 #include <string>
-#include <string_view>
 #include <tabulate.hpp>
-#include <utility>
-
-#define VERSION "v1.0.0"
 
 using namespace asio;
 using namespace asio::ip;
 using namespace tabulate;
-
-/* Simple parse from arguments cli */
-auto parse_args(int argc, char *argv[]) -> std::optional<std::string_view>;
 
 /* Displays the ipv4 network information table */
 auto display_network_table(const network_v4 &network) -> void;
@@ -27,30 +20,45 @@ auto display_network_table(const network_v4 &network) -> void;
 template <typename T> auto to_binary_and_format(const T &value) -> std::string;
 
 int main(int argc, char *argv[]) {
-  std::optional<std::string_view> argument{parse_args(argc, argv)};
-  if (argument.has_value()) {
-    error_code error;
-    network_v4 network{make_network_v4(argument.value(), error)};
-    if (error) {
-      std::cout << "Error: " << error.message() << std::endl;
-      std::exit(1);
-    }
-    display_network_table(network);
-  }
-  return 0;
-}
+  // Create instance of parser for program
+  argparse::ArgumentParser program{"netcal", "v1.0.0"};
 
-auto parse_args(int argc, char *argv[]) -> std::optional<std::string_view> {
-  int option{0};
-  while ((option = getopt(argc, argv, "va:")) != -1) {
-    if (std::cmp_equal(option, static_cast<int>('v'))) {
-      std::cout << VERSION << std::endl;
-      std::exit(1);
-    } else if (std::cmp_equal(option, static_cast<int>('a'))) {
-      return std::optional<std::string_view>(optarg);
-    }
+  // Added settings for program
+  program.add_description(
+      "Utility that calculates network address, netmask, network, broadcast, "
+      "etc by given IP Address with CIRD Notation.");
+  program.add_argument("address").help(
+      "ip address with cird notation, example: 192.168.100.1/24");
+  program.add_epilog("Written by Rosmer Lopez");
+
+  // Parser arguments
+  try {
+    program.parse_args(argc, argv);
+  } catch (std::runtime_error &error) {
+    std::cerr << error.what() << std::endl;
+    std::cerr << program;
+    std::exit(1);
   }
-  return std::nullopt;
+
+  // Saves the error in the construction
+  error_code error_make_network_v4{};
+
+  // Get ip address from arguments
+  const auto ip_address{program.get<std::string>("address")};
+
+  // Build network_v4 from ip address
+  const network_v4 network{make_network_v4(ip_address, error_make_network_v4)};
+
+  // In case of error, it displays it and exits
+  if (error_make_network_v4) {
+    std::cerr << error_make_network_v4.message() << std::endl;
+    std::cerr << program;
+    std::exit(1);
+  }
+
+  // Display network
+  display_network_table(network);
+  return 0;
 }
 
 auto display_network_table(const network_v4 &network) -> void {
